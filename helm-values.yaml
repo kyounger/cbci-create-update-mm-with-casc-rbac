@@ -1,0 +1,100 @@
+OperationsCenter:
+  Platform: gke
+  HostName: cbci.example.org
+  ExtraConfigMaps:
+    - name: mm-custom-groovy
+      data:
+        10-create-folder-on-mm-with-rbac.groovy: |
+          import com.cloudbees.hudson.plugins.folder.Folder;
+          import jenkins.model.Jenkins;
+          import nectar.plugins.rbac.groups.Group;
+          import nectar.plugins.rbac.groups.GroupContainerLocator;
+          
+          def appNumbers = System.getenv("APP_NUMBERS")?.split(',');
+          
+          appNumbers?.each {
+              String appNumber = it;
+          
+              String folderName = "app-${appNumber}";
+              String internalGroupName = "j-GroupDeveloper${appNumber}";
+              String externalGroupName = "GroupDeveloper${appNumber}";
+              String roleName = "develop";
+          
+              println("folderName: ${folderName}");
+              println("internalGroupName: ${internalGroupName}");
+              println("externalGroupName: ${externalGroupName}");
+          
+              Jenkins jenkins = Jenkins.getInstance();
+              def appFolder = jenkins.getItem(folderName);
+              if (appFolder == null) {
+                  println("${folderName} does not exist. Creating it...");
+                  jenkins.createProject(Folder.class, folderName);
+                  appFolder = jenkins.getItem(folderName);
+              }
+          
+              def container = GroupContainerLocator.locate(appFolder);
+              if(!container.getGroups().any{it.name=internalGroupName}) {
+                  Group group = new Group(container, internalGroupName);
+                  group.doAddMember(externalGroupName);
+                  group.doGrantRole(roleName, 0, Boolean.TRUE);
+                  container.addGroup(group);
+              }
+              sleep(500)
+          }
+          
+          
+    - name: bundle-template-a
+      data:
+        jenkins.yaml: |
+          jenkins:
+            systemMessage: "Jenkins configured using CasC."
+          
+        plugins.yaml: |
+          plugins:
+            - id: "configuration-as-code"
+            - id: "maven-plugin"
+            - id: "github-branch-source"
+            - id: "cloudbees-groovy-view"
+            - id: "cloudbees-jsync-archiver"
+            - id: "cloudbees-monitoring"
+            - id: "cloudbees-nodes-plus"
+            - id: "cloudbees-ssh-slaves"
+            - id: "cloudbees-template"
+            - id: "cloudbees-view-creation-filter"
+            - id: "cloudbees-workflow-template"
+            - id: "cloudbees-workflow-ui"
+            - id: "email-ext"
+            - id: "git"
+            - id: "infradna-backup"
+            - id: "ldap"
+            - id: "operations-center-cloud"
+            - id: "pipeline-model-extensions"
+            - id: "pipeline-stage-view"
+            - id: "wikitext"
+            - id: "workflow-aggregator"
+            - id: "workflow-cps-checkpoint"
+            - id: "configuration-as-code-groovy"
+            - id: "job-dsl"
+          
+        plugin-catalog.yaml: |
+          type: "plugin-catalog"
+          version: "1"
+          name: "must-have-catalog"
+          displayName: "Must Have Master Catalog"
+          configurations:
+          - description: "Important plugins"
+            includePlugins:
+              configuration-as-code-groovy:
+                version: 1.1
+              job-dsl:
+                version: 1.77
+          
+  ExtraVolumes:
+  - name: bundle-template-a
+    configMap:
+      name: bundle-template-a
+      defaultMode: 440
+  ExtraVolumeMounts:
+  - name: bundle-template-a
+    mountPath: /var/jenkins_config/bundle-templates/tmpl-a
+    readOnly: true
