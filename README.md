@@ -1,6 +1,10 @@
-# CloudBees CI (Core) Modern -- Example of Creating/Updating Managed Masters Programmatically
+# Note, this is an older version. There are more recent approaches on doing this:
+1. https://github.com/kyounger/cbci-create-update-managed-master-casc
+2. https://github.com/kyounger/cbci-helmfile
 
-Note, this only works on the latest version of 2.222.4.3. This script should be run against the Operations Center. It can be run from the script console, the jenkins cli, or REST.
+## CloudBees CI (Core) Modern -- Example of Creating/Updating Managed Masters Programmatically
+
+This only works on the latest version of 2.222.4.3. This script should be run against the Operations Center. It can be run from the script console, the jenkins cli, or REST.
 
 ## Prereqs
 
